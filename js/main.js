@@ -7,8 +7,6 @@
   const { setStatus, renderAll, fmt, fmtSigned } = window.App;
   const uid = window.App.uid;
 
-  els.dateInput.valueAsDate = new Date();
-
   // ---------- sort tabs ----------
   els.sortTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -18,51 +16,101 @@
     });
   });
 
-  // ---------- entry form ----------
-  function updatePreview(){
-    const name = els.playerInput.value.trim();
-    const newTotal = BN.parse(els.totalInput.value);
-    if (!name || !newTotal){ els.entryPreview.innerHTML = ''; return; }
-    const existing = State.history.filter(e => e.player.toLowerCase() === name.toLowerCase());
-    if (!existing.length){
-      els.entryPreview.innerHTML = `<span class="pv-new">New member</span> — this sets their baseline total (counted as +0 for this week).`;
-      return;
-    }
-    const latest = existing.slice().sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0).slice(-1)[0];
+  // ---------- add player ----------
+  els.addPlayerForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = els.newPlayerInput.value.trim();
+    const startRaw = els.newPlayerStartInput.value.trim();
+    const startTotal = startRaw ? BN.parse(startRaw) : BN.zero();
+    if (startRaw && !startTotal){ setStatus('Enter a valid starting total (e.g. 1500, 1.5k, 4.2qd).', 'err'); return; }
+    if (startTotal && BN.isNeg(startTotal)){ setStatus("Starting total can't be negative.", 'err'); return; }
+    const result = window.App.addPlayer(name, startTotal);
+    if (!result.ok){ setStatus(result.error, 'err'); return; }
+    renderAll();
+    setStatus(`Added ${result.name} to the leaderboard.`, 'ok');
+    els.newPlayerInput.value = '';
+    els.newPlayerStartInput.value = '';
+  });
+
+  // ---------- remove player ----------
+  els.removePlayerForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const name = els.removePlayerSelect.value;
+    if (!name) return;
+    if (!confirm(`Remove ${name} and all of their logged history? This can't be undone.`)) return;
+    const result = window.App.removePlayer(name);
+    if (!result.ok){ setStatus(result.error, 'err'); return; }
+    renderAll();
+    setStatus(`Removed ${result.name} from the leaderboard.`, 'ok');
+  });
+
+  // ---------- click-a-player entry modal ----------
+  let modalPlayer = null;
+
+  function latestEntryFor(name){
+    const entries = State.history.filter(e => e.player.toLowerCase() === name.toLowerCase());
+    if (!entries.length) return null;
+    return entries.slice().sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0).slice(-1)[0];
+  }
+
+  function updateModalPreview(){
+    const newTotal = BN.parse(els.modalTotalInput.value);
+    const latest = latestEntryFor(modalPlayer);
+    if (!newTotal || !latest){ els.modalEntryPreview.innerHTML = ''; return; }
     const delta = BN.sub(newTotal, latest.total);
     const cls = BN.isZero(delta) ? '' : BN.isNeg(delta) ? 'pv-neg' : 'pv-pos';
-    els.entryPreview.innerHTML = `Previous total: ${fmt(latest.total)} (logged ${latest.date}) → <span class="${cls}">${fmtSigned(delta)}</span> this update.`;
+    els.modalEntryPreview.innerHTML = `Previous total: ${fmt(latest.total)} (logged ${latest.date}) → <span class="${cls}">${fmtSigned(delta)}</span> this update.`;
   }
-  els.playerInput.addEventListener('input', updatePreview);
-  els.totalInput.addEventListener('input', updatePreview);
+  els.modalTotalInput.addEventListener('input', updateModalPreview);
 
-  els.entryForm.addEventListener('submit', (ev) => {
+  function openEntryModal(name){
+    const canonical = window.App.findPlayerName(name) || name;
+    modalPlayer = canonical;
+    els.entryModalPlayerName.textContent = canonical;
+    els.modalDateInput.valueAsDate = new Date();
+    els.modalTotalInput.value = '';
+    els.modalEntryPreview.innerHTML = '';
+    els.entryModalBackdrop.hidden = false;
+    els.modalTotalInput.focus();
+  }
+
+  function closeEntryModal(){
+    els.entryModalBackdrop.hidden = true;
+    modalPlayer = null;
+  }
+
+  els.entryModalClose.addEventListener('click', closeEntryModal);
+  els.modalCancelBtn.addEventListener('click', closeEntryModal);
+  els.entryModalBackdrop.addEventListener('click', (ev) => {
+    if (ev.target === els.entryModalBackdrop) closeEntryModal();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !els.entryModalBackdrop.hidden) closeEntryModal();
+  });
+
+  els.modalEntryForm.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    const name = els.playerInput.value.trim();
-    const date = els.dateInput.value;
-    const total = BN.parse(els.totalInput.value);
-    if (!name){ setStatus('Enter a player name.', 'err'); return; }
+    if (!modalPlayer) return;
+    const date = els.modalDateInput.value;
+    const total = BN.parse(els.modalTotalInput.value);
     if (!date){ setStatus('Pick a date.', 'err'); return; }
     if (!total){ setStatus('Enter a valid total (e.g. 1500, 1.5k, 4.2qd, 1.2e45).', 'err'); return; }
     if (BN.isNeg(total)){ setStatus('Enter a valid total.', 'err'); return; }
 
-    const existing = State.history.filter(e => e.player.toLowerCase() === name.toLowerCase());
-    if (existing.length){
-      const latest = existing.slice().sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0).slice(-1)[0];
-      if (BN.cmp(total, latest.total) < 0){
-        const ok = confirm(`New total (${fmt(total)}) is lower than the last logged total (${fmt(latest.total)}) for ${latest.player}. This will record a negative amount for that week. Continue anyway?`);
-        if (!ok) return;
-      }
+    const latest = latestEntryFor(modalPlayer);
+    if (latest && BN.cmp(total, latest.total) < 0){
+      const ok = confirm(`New total (${fmt(total)}) is lower than the last logged total (${fmt(latest.total)}) for ${modalPlayer}. This will record a negative amount for that week. Continue anyway?`);
+      if (!ok) return;
     }
 
-    // normalize player name to however it was first entered, for consistency
-    const canonicalName = existing.length ? existing[0].player : name;
-    State.history.push({ id: uid(), date, player: canonicalName, total });
+    State.history.push({ id: uid(), date, player: modalPlayer, total });
+    const loggedFor = modalPlayer;
+    closeEntryModal();
     renderAll();
-    setStatus(`Logged ${fmt(total)} for ${canonicalName} on ${date}.`, 'ok');
-    els.totalInput.value = '';
-    els.entryPreview.innerHTML = '';
+    setStatus(`Logged ${fmt(total)} for ${loggedFor} on ${date}.`, 'ok');
   });
+
+  window.App.openEntryModal = openEntryModal;
 
   // ---------- import / export ----------
   window.App.initImportExport();

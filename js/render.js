@@ -19,14 +19,23 @@ window.App = window.App || {};
     statWeeks: document.getElementById('statWeeks'),
     chartFloor: document.getElementById('chartFloor'),
     leaderboardWrap: document.getElementById('leaderboardWrap'),
+    lbHint: document.getElementById('lbHint'),
     sortTabs: document.querySelectorAll('.sort-tab'),
-    entryForm: document.getElementById('entryForm'),
-    playerInput: document.getElementById('playerInput'),
-    dateInput: document.getElementById('dateInput'),
-    totalInput: document.getElementById('totalInput'),
-    entryPreview: document.getElementById('entryPreview'),
-    playerList: document.getElementById('playerList'),
+    addPlayerForm: document.getElementById('addPlayerForm'),
+    newPlayerInput: document.getElementById('newPlayerInput'),
+    newPlayerStartInput: document.getElementById('newPlayerStartInput'),
+    removePlayerForm: document.getElementById('removePlayerForm'),
+    removePlayerSelect: document.getElementById('removePlayerSelect'),
     historyWrap: document.getElementById('historyWrap'),
+    entryModalBackdrop: document.getElementById('entryModalBackdrop'),
+    entryModal: document.getElementById('entryModal'),
+    entryModalClose: document.getElementById('entryModalClose'),
+    entryModalPlayerName: document.getElementById('entryModalPlayerName'),
+    modalEntryForm: document.getElementById('modalEntryForm'),
+    modalDateInput: document.getElementById('modalDateInput'),
+    modalTotalInput: document.getElementById('modalTotalInput'),
+    modalEntryPreview: document.getElementById('modalEntryPreview'),
+    modalCancelBtn: document.getElementById('modalCancelBtn'),
   };
 
   function fmt(n){ return BN.format(n); }
@@ -50,7 +59,7 @@ window.App = window.App || {};
     renderStats(d);
     renderChart(d.series);
     renderLeaderboard(d.players);
-    renderPlayerList(d.players);
+    renderRemovePlayerSelect(d.players);
     renderHistory(d.entriesWithDelta);
   }
 
@@ -82,16 +91,18 @@ window.App = window.App || {};
 
   function renderLeaderboard(players){
     if (!players.length){
-      els.leaderboardWrap.innerHTML = '<div class="empty-state">No members yet — import a spreadsheet or add someone below.</div>';
+      els.leaderboardWrap.innerHTML = '<div class="empty-state">No members yet — add someone below or import a spreadsheet.</div>';
+      els.lbHint.hidden = true;
       return;
     }
+    els.lbHint.hidden = false;
     const sorted = players.slice().sort((a,b) => BN.cmp(b[State.sortMode], a[State.sortMode]));
     const head = `<div class="lb-row head">
         <div></div><div>Member</div><div>Total</div><div>This wk</div><div>Last wk</div>
       </div>`;
     const rows = sorted.map((p, i) => {
       const cls = v => BN.isZero(v) ? 'zero' : BN.isNeg(v) ? 'neg' : 'pos';
-      return `<div class="lb-row">
+      return `<div class="lb-row clickable" data-player="${escapeHtml(p.name)}" tabindex="0" role="button">
         <div class="rank">${i+1}</div>
         <div class="pname">${escapeHtml(p.name)}<span class="since">updated ${p.lastUpdated}</span></div>
         <div class="num">${fmt(p.total)}</div>
@@ -100,10 +111,20 @@ window.App = window.App || {};
       </div>`;
     }).join('');
     els.leaderboardWrap.innerHTML = head + rows;
+    els.leaderboardWrap.querySelectorAll('.lb-row.clickable').forEach(row => {
+      const open = () => window.App.openEntryModal(row.dataset.player);
+      row.addEventListener('click', open);
+      row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); open(); } });
+    });
   }
 
-  function renderPlayerList(players){
-    els.playerList.innerHTML = players.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+  function renderRemovePlayerSelect(players){
+    if (!els.removePlayerSelect) return;
+    const prev = els.removePlayerSelect.value;
+    els.removePlayerSelect.innerHTML = players.length
+      ? players.slice().sort((a,b) => a.name.localeCompare(b.name)).map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')
+      : '<option value="" disabled selected>No players yet</option>';
+    if (players.some(p => p.name === prev)) els.removePlayerSelect.value = prev;
   }
 
   function renderHistory(entries){

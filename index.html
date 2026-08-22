@@ -44,28 +44,32 @@
         <button class="sort-tab" data-sort="lastWeek">Last week</button>
       </div>
     </div>
-    <div id="leaderboardWrap"><div class="empty-state">No members yet — import a spreadsheet or add someone below.</div></div>
+    <div id="leaderboardWrap"><div class="empty-state">No members yet — add someone below or import a spreadsheet.</div></div>
+    <div class="lb-hint" id="lbHint" hidden>Click a member to log a prism update.</div>
   </div>
 
   <div class="card">
-    <h2 class="card-title" style="margin-bottom:16px;">Log a donation update</h2>
-    <form class="entry-form" id="entryForm">
-      <div>
-        <label for="playerInput">Player</label>
-        <input type="text" id="playerInput" list="playerList" placeholder="Username" autocomplete="off" required>
-        <datalist id="playerList"></datalist>
-      </div>
-      <div>
-        <label for="dateInput">Date</label>
-        <input type="date" id="dateInput" required>
-      </div>
-      <div>
-        <label for="totalInput">New total prism</label>
-        <input type="text" id="totalInput" inputmode="decimal" autocomplete="off" required>
-      </div>
-      <button type="submit" class="btn primary">Add / update</button>
-    </form>
-    <div class="entry-preview" id="entryPreview"></div>
+    <h2 class="card-title" style="margin-bottom:16px;">Manage players</h2>
+    <div class="manage-row">
+      <form class="add-player-form" id="addPlayerForm">
+        <div>
+          <label for="newPlayerInput">New player</label>
+          <input type="text" id="newPlayerInput" placeholder="Username" autocomplete="off" required>
+        </div>
+        <div>
+          <label for="newPlayerStartInput">Starting total (optional)</label>
+          <input type="text" id="newPlayerStartInput" inputmode="decimal" autocomplete="off" placeholder="0">
+        </div>
+        <button type="submit" class="btn primary">Add player</button>
+      </form>
+      <form class="remove-player-form" id="removePlayerForm">
+        <div>
+          <label for="removePlayerSelect">Remove player</label>
+          <select id="removePlayerSelect"></select>
+        </div>
+        <button type="submit" class="btn ghost danger">Remove</button>
+      </form>
+    </div>
   </div>
 
   <div class="card">
@@ -77,6 +81,28 @@
 
   <p class="footer-note">Nothing here is saved automatically — use Export to keep your data between sessions.</p>
 
+</div>
+
+<div class="modal-backdrop" id="entryModalBackdrop" hidden>
+  <div class="modal" id="entryModal">
+    <button type="button" class="modal-close" id="entryModalClose" aria-label="Close">&times;</button>
+    <h2 class="card-title">Log prism for <span id="entryModalPlayerName"></span></h2>
+    <form id="modalEntryForm">
+      <div>
+        <label for="modalDateInput">Date</label>
+        <input type="date" id="modalDateInput" required>
+      </div>
+      <div>
+        <label for="modalTotalInput">New total prism</label>
+        <input type="text" id="modalTotalInput" inputmode="decimal" autocomplete="off" required>
+      </div>
+      <div class="entry-preview" id="modalEntryPreview"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="modalCancelBtn">Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Load order matters: each module attaches to the shared window.App namespace. -->

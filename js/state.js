@@ -13,6 +13,28 @@ window.App = window.App || {};
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
+  // ---------- add / remove players (separate from logging a donation) ----------
+  function findPlayerName(name){
+    const hit = State.history.find(e => e.player.toLowerCase() === name.toLowerCase());
+    return hit ? hit.player : null;
+  }
+
+  function addPlayer(name, startTotal, date){
+    name = (name || '').trim();
+    if (!name) return { ok: false, error: 'Enter a player name.' };
+    if (findPlayerName(name)) return { ok: false, error: `${name} is already on the leaderboard.` };
+    const total = startTotal && !BN.isZero(startTotal) ? startTotal : BN.zero();
+    State.history.push({ id: uid(), date: date || toISODate(new Date()), player: name, total });
+    return { ok: true, name };
+  }
+
+  function removePlayer(name){
+    const canonical = findPlayerName(name);
+    if (!canonical) return { ok: false, error: `${name} isn't on the leaderboard.` };
+    State.history = State.history.filter(e => e.player !== canonical);
+    return { ok: true, name: canonical };
+  }
+
   // ---------- derive everything from history ----------
   function computeDerived(){
     const byPlayer = {};
@@ -70,4 +92,7 @@ window.App = window.App || {};
   window.App.State = State;
   window.App.uid = uid;
   window.App.computeDerived = computeDerived;
+  window.App.addPlayer = addPlayer;
+  window.App.removePlayer = removePlayer;
+  window.App.findPlayerName = findPlayerName;
 })();

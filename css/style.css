@@ -137,6 +137,12 @@ h1{
   .lb-row{ grid-template-columns: 20px 1fr 80px 70px; }
   .lb-row > :nth-child(5){ display:none; }
 }
+.lb-row.clickable{ cursor:pointer; border-radius:8px; transition: background .12s ease; }
+.lb-row.clickable:hover, .lb-row.clickable:focus-visible{ background: var(--bg-raised); outline:none; }
+.lb-hint{
+  font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-faint);
+  margin-top:10px;
+}
 .rank{ font-family:'IBM Plex Mono', monospace; color:var(--text-faint); font-size:12px; }
 .pname{ font-weight:600; font-size:14px; }
 .pname .since{ display:block; font-family:'IBM Plex Mono', monospace; font-weight:400; font-size:10px; color:var(--text-faint); margin-top:2px; }
@@ -144,6 +150,44 @@ h1{
 .delta.pos{ color:var(--cyan); }
 .delta.zero{ color:var(--text-faint); }
 .delta.neg{ color:var(--coral); }
+
+/* ---------- Manage players ---------- */
+.manage-row{ display:flex; flex-wrap:wrap; gap:22px; }
+form.add-player-form, form.remove-player-form{
+  display:grid; gap:12px; align-items:end; flex:1 1 260px;
+  grid-template-columns: 1fr 1fr auto;
+}
+form.remove-player-form{ grid-template-columns: 1fr auto; }
+@media (max-width:640px){
+  form.add-player-form, form.remove-player-form{ grid-template-columns: 1fr; }
+}
+select{
+  width:100%; background:var(--bg-raised); border:1px solid var(--line);
+  border-radius:8px; color:var(--text); padding:10px 12px;
+  font-family:'Inter', sans-serif; font-size:14px; outline:none;
+}
+select:focus{ border-color:var(--violet); box-shadow:0 0 0 3px rgba(141,123,255,.18); }
+
+/* ---------- Entry modal ---------- */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(8,7,16,.72);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px; z-index:100;
+}
+.modal{
+  position:relative; width:100%; max-width:380px;
+  background:var(--bg-panel); border:1px solid var(--line);
+  border-radius:16px; padding:24px;
+}
+.modal .card-title{ margin:0 0 18px; padding-right:24px; }
+.modal-close{
+  position:absolute; top:14px; right:14px; width:28px; height:28px;
+  border-radius:7px; border:1px solid var(--line); background:var(--bg-raised);
+  color:var(--text-dim); font-size:18px; line-height:1; cursor:pointer;
+}
+.modal-close:hover{ border-color:var(--coral); color:var(--coral); }
+#modalEntryForm{ display:grid; gap:14px; }
+.modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
 
 /* ---------- Add entry form ---------- */
 form.entry-form{ display:grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap:12px; align-items:end; }
