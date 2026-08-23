@@ -12,70 +12,85 @@
 <body>
 <div class="wrap">
 
-  <div class="eyebrow">Noob Incremental — Guild</div>
-  <h1>Prism Board</h1>
-  <div class="toolbar">
-    <button class="btn primary" id="importBtn">Import spreadsheet</button>
-    <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
-    <button class="btn" id="exportBtn">Export spreadsheet</button>
-    <button class="btn ghost danger" id="clearBtn">Clear all</button>
-    <span class="toolbar-status" id="toolbarStatus">No data loaded yet</span>
+  <div class="top-bar">
+    <div class="brand">
+      <div class="eyebrow">Noob Incremental — Guild</div>
+      <h1>Prism Board</h1>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" id="importBtn">Import spreadsheet</button>
+      <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+      <button class="btn" id="exportBtn">Export spreadsheet</button>
+      <button class="btn ghost danger" id="clearBtn">Clear all</button>
+      <span class="toolbar-status" id="toolbarStatus">No data loaded yet</span>
+    </div>
   </div>
 
-  <div class="stat-row">
-    <div class="stat c1"><div class="label">Guild total prism</div><div class="value" id="statTotal">0</div></div>
-    <div class="stat c2"><div class="label">Donated this week</div><div class="value" id="statWeek">0</div></div>
-    <div class="stat c3"><div class="label">Members tracked</div><div class="value" id="statMembers">0</div></div>
-    <div class="stat c4"><div class="label">Weeks tracked</div><div class="value" id="statWeeks">0</div></div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnOverview" data-tab="overview">Overview</button>
+    <button class="tab-btn" id="tabBtnManage" data-tab="manage">Manage players &amp; history</button>
   </div>
 
-  <div class="card">
-    <div class="card-head"><h2 class="card-title">Prism donated per week</h2></div>
-    <div class="chart-floor" id="chartFloor"><div class="chart-empty">Import or add data to see the weekly trend.</div></div>
-  </div>
+  <div class="tab-panel" id="tabOverview">
+    <div class="stat-row">
+      <div class="stat c1"><div class="label">Guild total prism</div><div class="value" id="statTotal">0</div></div>
+      <div class="stat c2"><div class="label">Donated this week</div><div class="value" id="statWeek">0</div></div>
+      <div class="stat c3"><div class="label">Members tracked</div><div class="value" id="statMembers">0</div></div>
+      <div class="stat c4"><div class="label">Weeks tracked</div><div class="value" id="statWeeks">0</div></div>
+    </div>
 
-  <div class="card">
-    <div class="card-head">
-      <h2 class="card-title">Leaderboard</h2>
-      <div class="sort-tabs">
-        <button class="sort-tab active" data-sort="total">Total</button>
-        <button class="sort-tab" data-sort="thisWeek">This week</button>
-        <button class="sort-tab" data-sort="lastWeek">Last week</button>
+    <div class="overview-grid">
+      <div class="card chart-card">
+        <div class="card-head"><h2 class="card-title">Prism donated per week</h2></div>
+        <div class="chart-floor" id="chartFloor"><div class="chart-empty">Import or add data to see the weekly trend.</div></div>
+      </div>
+
+      <div class="card lb-card">
+        <div class="card-head">
+          <h2 class="card-title">Leaderboard</h2>
+          <div class="sort-tabs">
+            <button class="sort-tab active" data-sort="total">Total</button>
+            <button class="sort-tab" data-sort="thisWeek">This week</button>
+            <button class="sort-tab" data-sort="lastWeek">Last week</button>
+          </div>
+        </div>
+        <div id="leaderboardWrap" class="lb-scroll"><div class="empty-state">No members yet — add someone from the Manage tab or import a spreadsheet.</div></div>
+        <div class="lb-hint" id="lbHint" hidden>Click a member to log a prism update.</div>
       </div>
     </div>
-    <div id="leaderboardWrap"><div class="empty-state">No members yet — add someone below or import a spreadsheet.</div></div>
-    <div class="lb-hint" id="lbHint" hidden>Click a member to log a prism update.</div>
   </div>
 
-  <div class="card">
-    <h2 class="card-title" style="margin-bottom:16px;">Manage players</h2>
-    <div class="manage-row">
-      <form class="add-player-form" id="addPlayerForm">
-        <div>
-          <label for="newPlayerInput">New player</label>
-          <input type="text" id="newPlayerInput" placeholder="Username" autocomplete="off" required>
+  <div class="tab-panel" id="tabManage" hidden>
+    <div class="manage-grid">
+      <div class="card">
+        <h2 class="card-title" style="margin-bottom:16px;">Manage players</h2>
+        <div class="manage-row">
+          <form class="add-player-form" id="addPlayerForm">
+            <div>
+              <label for="newPlayerInput">New player</label>
+              <input type="text" id="newPlayerInput" placeholder="Username" autocomplete="off" required>
+            </div>
+            <div>
+              <label for="newPlayerStartInput">Starting total (optional)</label>
+              <input type="text" id="newPlayerStartInput" inputmode="decimal" autocomplete="off" placeholder="0">
+            </div>
+            <button type="submit" class="btn primary">Add player</button>
+          </form>
+          <form class="remove-player-form" id="removePlayerForm">
+            <div>
+              <label for="removePlayerSelect">Remove player</label>
+              <select id="removePlayerSelect"></select>
+            </div>
+            <button type="submit" class="btn ghost danger">Remove</button>
+          </form>
         </div>
-        <div>
-          <label for="newPlayerStartInput">Starting total (optional)</label>
-          <input type="text" id="newPlayerStartInput" inputmode="decimal" autocomplete="off" placeholder="0">
-        </div>
-        <button type="submit" class="btn primary">Add player</button>
-      </form>
-      <form class="remove-player-form" id="removePlayerForm">
-        <div>
-          <label for="removePlayerSelect">Remove player</label>
-          <select id="removePlayerSelect"></select>
-        </div>
-        <button type="submit" class="btn ghost danger">Remove</button>
-      </form>
+      </div>
+
+      <div class="card history-card">
+        <h2 class="card-title" style="margin-bottom:16px;">Raw history log</h2>
+        <div id="historyWrap" class="history-scroll"></div>
+      </div>
     </div>
-  </div>
-
-  <div class="card">
-    <details class="history">
-      <summary>Raw history log — every logged entry (click to expand, delete mistakes here)</summary>
-      <div id="historyWrap"></div>
-    </details>
   </div>
 
   <p class="footer-note">Nothing here is saved automatically — use Export to keep your data between sessions.</p>

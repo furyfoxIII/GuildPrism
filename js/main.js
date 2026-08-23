@@ -15,6 +15,17 @@
     });
   });
 
+  // ---------- top-level tabs (overview / manage) ----------
+  function showTab(name){
+    const isOverview = name === 'overview';
+    els.tabOverview.hidden = !isOverview;
+    els.tabManage.hidden = isOverview;
+    els.tabBtnOverview.classList.toggle('active', isOverview);
+    els.tabBtnManage.classList.toggle('active', !isOverview);
+  }
+  els.tabBtnOverview.addEventListener('click', () => showTab('overview'));
+  els.tabBtnManage.addEventListener('click', () => showTab('manage'));
+
   // ---------- add player ----------
   els.addPlayerForm.addEventListener('submit', (ev) => {
     ev.preventDefault();

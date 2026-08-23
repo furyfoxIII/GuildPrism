@@ -35,6 +35,10 @@ window.App = window.App || {};
     modalTotalInput: document.getElementById('modalTotalInput'),
     modalEntryPreview: document.getElementById('modalEntryPreview'),
     modalCancelBtn: document.getElementById('modalCancelBtn'),
+    tabBtnOverview: document.getElementById('tabBtnOverview'),
+    tabBtnManage: document.getElementById('tabBtnManage'),
+    tabOverview: document.getElementById('tabOverview'),
+    tabManage: document.getElementById('tabManage'),
   };
 
   function fmt(n){ return BN.format(n); }
