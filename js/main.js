@@ -1,7 +1,6 @@
 // ---------- main: wires up UI events and boots the app ----------
 (function(){
   const BN = window.App.BN;
-  const { toISODate } = window.App.Dates;
   const State = window.App.State;
   const els = window.App.els;
   const { setStatus, renderAll, fmt, fmtSigned } = window.App;
@@ -114,33 +113,6 @@
 
   // ---------- import / export ----------
   window.App.initImportExport();
-
-  // ---------- sample data ----------
-  els.sampleBtn.addEventListener('click', () => {
-    if (State.history.length && !confirm('Load sample data? This replaces all current data.')) return;
-    const today = new Date();
-    const names = ['Kaelrix', 'Novashade', 'Prizmatic', 'Voidreaper'];
-    const baseTotals = [8200, 5400, 12100, 4200000000000000]; // Voidreaper starts at 4.2qd
-    const weeklyGains = [
-      [420, 300, 610, 150000000000000],
-      [380, 0, 540, 90000000000000],
-      [500, 260, 300, 220000000000000],
-      [0, 410, 700, 0],
-    ];
-    State.history = [];
-    names.forEach((name, ni) => {
-      let total = BN.fromNumber(baseTotals[ni]);
-      let d = new Date(today); d.setDate(d.getDate() - 28);
-      State.history.push({ id: uid(), date: toISODate(d), player: name, total });
-      weeklyGains.forEach(week => {
-        d = new Date(d); d.setDate(d.getDate() + 7);
-        total = BN.add(total, BN.fromNumber(week[ni]));
-        State.history.push({ id: uid(), date: toISODate(d), player: name, total });
-      });
-    });
-    renderAll();
-    setStatus('Loaded sample data.', 'ok');
-  });
 
   // ---------- clear ----------
   els.clearBtn.addEventListener('click', () => {

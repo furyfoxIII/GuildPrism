@@ -10,7 +10,6 @@ window.App = window.App || {};
     importBtn: document.getElementById('importBtn'),
     importFile: document.getElementById('importFile'),
     exportBtn: document.getElementById('exportBtn'),
-    sampleBtn: document.getElementById('sampleBtn'),
     clearBtn: document.getElementById('clearBtn'),
     toolbarStatus: document.getElementById('toolbarStatus'),
     statTotal: document.getElementById('statTotal'),
