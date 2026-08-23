@@ -1,4 +1,15 @@
 // ---------- spreadsheet import / export (uses the SheetJS/xlsx library) ----------
+//
+// Backward-compatibility note for future edits:
+// If you rename/restructure the exported columns or the big-number storage
+// format (BN.toStorageValue), keep OLD header names/candidates in findKey's
+// lists rather than replacing them, and keep normalizeRow able to parse
+// values written by older versions. That's what lets spreadsheets exported
+// by an older build of the app still import cleanly after an update.
+// FORMAT_VERSION is stamped into a hidden "Meta" sheet on every export so a
+// future version can at least detect ("this file is from a newer/older
+// format") — bump it whenever you make a change that isn't compatible with
+// what earlier normalizeRow versions expect.
 window.App = window.App || {};
 
 (function(){
@@ -7,6 +18,8 @@ window.App = window.App || {};
   const State = window.App.State;
   const els = window.App.els;
   const { setStatus, renderAll } = window.App;
+
+  const FORMAT_VERSION = 1;
 
   function findKey(row, candidates){
     const keys = Object.keys(row);
@@ -47,6 +60,23 @@ window.App = window.App || {};
     return { id: window.App.uid(), date: dateStr, player, total };
   }
 
+  // Reads the hidden "Meta" sheet (if present) to find which format version
+  // wrote this file. Older exports (before this existed) have no Meta sheet
+  // at all — that's treated as version 1, not an error.
+  function readFormatVersion(wb){
+    const ws = wb.Sheets['Meta'];
+    if (!ws) return 1;
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    const row = rows.find(r => {
+      const k = findKey(r, ['key']);
+      return k && String(r[k]).trim().toLowerCase() === 'format version';
+    });
+    if (!row) return 1;
+    const valKey = findKey(row, ['value']);
+    const v = valKey ? parseInt(row[valKey], 10) : NaN;
+    return isNaN(v) ? 1 : v;
+  }
+
   function initImportExport(){
     els.importBtn.addEventListener('click', () => els.importFile.click());
 
@@ -56,7 +86,8 @@ window.App = window.App || {};
       try{
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-        const sheetName = wb.SheetNames[0];
+        const fileVersion = readFormatVersion(wb);
+        const sheetName = wb.SheetNames.find(n => n !== 'Meta') || wb.SheetNames[0];
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
         const parsed = rows.map(normalizeRow).filter(Boolean);
@@ -69,7 +100,10 @@ window.App = window.App || {};
         }
         State.history = parsed;
         renderAll();
-        setStatus(`Imported ${parsed.length} entries from ${file.name}${skipped ? ` (${skipped} skipped)` : ''}.`, 'ok');
+        const versionNote = fileVersion > FORMAT_VERSION
+          ? ' Note: this file was exported by a newer version of the app — some data may not have loaded correctly.'
+          : '';
+        setStatus(`Imported ${parsed.length} entries from ${file.name}${skipped ? ` (${skipped} skipped)` : ''}.${versionNote}`, versionNote ? 'err' : 'ok');
       }catch(err){
         setStatus('Import failed: ' + err.message, 'err');
       }finally{
@@ -83,8 +117,13 @@ window.App = window.App || {};
         .sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
         .map(e => ({ Date: e.date, Player: e.player, Total: BN.toStorageValue(e.total) }));
       const ws = XLSX.utils.json_to_sheet(rows);
+      const metaWs = XLSX.utils.json_to_sheet([
+        { Key: 'Format version', Value: FORMAT_VERSION },
+        { Key: 'Exported', Value: toISODate(new Date()) },
+      ]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'History');
+      XLSX.utils.book_append_sheet(wb, metaWs, 'Meta');
       const filename = `guild-prism-history-${toISODate(new Date())}.xlsx`;
       XLSX.writeFile(wb, filename);
       setStatus(`Exported ${rows.length} entries to ${filename}.`, 'ok');
