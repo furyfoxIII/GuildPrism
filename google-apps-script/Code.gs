@@ -15,12 +15,11 @@
 //      behalf without GuildPrism itself ever needing a Google sign-in).
 //   6. Copy the resulting URL (ends in /exec) into GuildPrism's
 //      "Google Sheet" settings, along with the same secret.
-//
-// This intentionally does NOT use Google's OAuth/Sheets API from the
-// browser — the script itself is the thing that's authorized, once, by
-// its owner. GuildPrism just calls this URL like any other API.
+//   7. Change YOUR_SHEET_ID by the id of the google sheet, it's located between
+//	/d/YOUR_SHEET_ID/edit in the google sheet link
 
 const SHARED_SECRET = 'change-me';
+const YOUR_SHEET_ID = 'change-me-too';
 const SHEET_NAME = 'History';
 const META_SHEET_NAME = 'Meta';
 
@@ -32,7 +31,7 @@ function doGet(e) {
     return jsonResponse({ ok: false, error: 'Invalid secret.' });
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(YOUR_SHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) return jsonResponse({ ok: true, formatVersion: readFormatVersion(ss), treasury: readTreasury(ss), rows: [] });
 
@@ -63,7 +62,7 @@ function doPost(e) {
   }
 
   const rows = Array.isArray(body.rows) ? body.rows : [];
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(YOUR_SHEET_ID);
 
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
