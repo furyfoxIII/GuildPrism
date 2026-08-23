@@ -41,8 +41,20 @@
 
     <div class="overview-grid">
       <div class="card chart-card">
-        <div class="card-head"><h2 class="card-title">Prism donated per week</h2></div>
-        <div class="chart-floor" id="chartFloor"><div class="chart-empty">Import or add data to see the weekly trend.</div></div>
+        <div class="card-head">
+          <h2 class="card-title" id="chartCardTitle">Prism donated per week</h2>
+          <div class="view-tabs">
+            <button class="view-tab active" data-view="trend">Weekly trend</button>
+            <button class="view-tab" data-view="pie">This week by member</button>
+          </div>
+        </div>
+        <div class="chart-body" id="chartBodyView">
+          <div class="chart-axis" id="chartAxis"></div>
+          <div class="chart-scroll">
+            <div class="chart-floor" id="chartFloor"><div class="chart-empty">Import or add data to see the weekly trend.</div></div>
+          </div>
+        </div>
+        <div class="pie-view" id="pieView" hidden></div>
       </div>
 
       <div class="card lb-card">

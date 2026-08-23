@@ -15,6 +15,17 @@
     });
   });
 
+  // ---------- chart view toggle (weekly trend vs. this-week pie) ----------
+  els.viewTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const isPie = tab.dataset.view === 'pie';
+      els.viewTabs.forEach(t => t.classList.toggle('active', t === tab));
+      els.chartBodyView.hidden = isPie;
+      els.pieView.hidden = !isPie;
+      if (!isPie) renderAll(); // bar chart needs a fresh px measurement now that it's visible again
+    });
+  });
+
   // ---------- top-level tabs (overview / manage) ----------
   function showTab(name){
     const isOverview = name === 'overview';
@@ -23,8 +34,18 @@
     els.tabBtnOverview.classList.toggle('active', isOverview);
     els.tabBtnManage.classList.toggle('active', !isOverview);
   }
-  els.tabBtnOverview.addEventListener('click', () => showTab('overview'));
+  els.tabBtnOverview.addEventListener('click', () => { showTab('overview'); renderAll(); });
   els.tabBtnManage.addEventListener('click', () => showTab('manage'));
+
+  // Chart bar/gridline heights are measured in px at render time, so redraw
+  // it (only) when the viewport is resized.
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (!els.tabOverview.hidden) renderAll();
+    }, 150);
+  });
 
   // ---------- add player ----------
   els.addPlayerForm.addEventListener('submit', (ev) => {

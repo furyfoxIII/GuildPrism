@@ -70,6 +70,14 @@ window.App = window.App || {};
     isNeg(a){ return a.m < 0; },
     toNumber(a){ return a.m * Math.pow(10, a.e); },
 
+    // log10 of a positive BN as a plain JS number (e.g. 2,410,000... -> ~6.38).
+    // Used for laying out a non-linear (log-scale) chart axis. Returns null
+    // for zero/negative values, which have no defined log.
+    log10(a){
+      if (!a || a.m <= 0) return null;
+      return a.e + Math.log10(a.m);
+    },
+
     // Safe-ish a/b as a plain JS number — used only for chart-bar height ratios.
     ratio(a, b){
       if (a.m === 0 || b.m === 0) return 0;
