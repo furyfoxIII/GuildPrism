@@ -9,6 +9,7 @@ window.App = window.App || {};
   const State = {
     history: [],
     sortMode: 'total',
+    treasury: BN.zero(), // prism donated by members who have since been removed
   };
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -31,8 +32,13 @@ window.App = window.App || {};
   function removePlayer(name){
     const canonical = findPlayerName(name);
     if (!canonical) return { ok: false, error: `${name} isn't on the leaderboard.` };
+    const entries = State.history
+      .filter(e => e.player === canonical)
+      .sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0); // stable: ties keep insertion order, so last = truly latest
+    const latestTotal = entries[entries.length - 1].total;
+    State.treasury = BN.add(State.treasury, latestTotal);
     State.history = State.history.filter(e => e.player !== canonical);
-    return { ok: true, name: canonical };
+    return { ok: true, name: canonical, movedToTreasury: latestTotal };
   }
 
   // ---------- derive everything from history ----------
@@ -58,8 +64,7 @@ window.App = window.App || {};
     });
 
     const todayKey = weekKeyOf(toISODate(new Date()));
-    const lastWeekDate = new Date(); lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-    const lastWeekKey = weekKeyOf(toISODate(lastWeekDate));
+    const lastWeekKey = weekKeyOf(toISODate(new Date(Date.now() - 7 * 24 * 3600 * 1000)));
 
     let series = [];
     const weekKeys = Object.keys(weeklyMap);
@@ -72,7 +77,7 @@ window.App = window.App || {};
       while (cur <= end){
         const key = toISODate(cur);
         series.push({ weekStart: key, total: weeklyMap[key] || BN.zero() });
-        cur.setDate(cur.getDate() + 7);
+        cur = window.App.Dates.addDaysUTC(cur, 7);
       }
     }
 
@@ -83,10 +88,10 @@ window.App = window.App || {};
       return { name, total: latest.total, lastUpdated: latest.date, thisWeek, lastWeek };
     });
 
-    const guildTotal = players.reduce((s,p) => BN.add(s, p.total), BN.zero());
+    const guildTotal = players.reduce((s,p) => BN.add(s, p.total), State.treasury);
     const guildThisWeek = weeklyMap[todayKey] || BN.zero();
 
-    return { players, series, guildTotal, guildThisWeek, weeksTracked: weekKeys.length, entriesWithDelta };
+    return { players, series, guildTotal, guildThisWeek, weeksTracked: weekKeys.length, entriesWithDelta, treasury: State.treasury };
   }
 
   window.App.State = State;

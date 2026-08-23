@@ -29,6 +29,11 @@ window.App = window.App || {};
     newPlayerStartInput: document.getElementById('newPlayerStartInput'),
     removePlayerForm: document.getElementById('removePlayerForm'),
     removePlayerSelect: document.getElementById('removePlayerSelect'),
+    treasuryBox: document.getElementById('treasuryBox'),
+    treasuryValue: document.getElementById('treasuryValue'),
+    treasuryAdjustForm: document.getElementById('treasuryAdjustForm'),
+    treasuryAdjustInput: document.getElementById('treasuryAdjustInput'),
+    resetTreasuryBtn: document.getElementById('resetTreasuryBtn'),
     historyWrap: document.getElementById('historyWrap'),
     entryModalBackdrop: document.getElementById('entryModalBackdrop'),
     entryModal: document.getElementById('entryModal'),
@@ -43,6 +48,14 @@ window.App = window.App || {};
     tabBtnManage: document.getElementById('tabBtnManage'),
     tabOverview: document.getElementById('tabOverview'),
     tabManage: document.getElementById('tabManage'),
+    sheetBtn: document.getElementById('sheetBtn'),
+    sheetModalBackdrop: document.getElementById('sheetModalBackdrop'),
+    sheetModalClose: document.getElementById('sheetModalClose'),
+    sheetSettingsForm: document.getElementById('sheetSettingsForm'),
+    sheetUrlInput: document.getElementById('sheetUrlInput'),
+    sheetSecretInput: document.getElementById('sheetSecretInput'),
+    sheetPullBtn: document.getElementById('sheetPullBtn'),
+    sheetPushBtn: document.getElementById('sheetPushBtn'),
   };
 
   function fmt(n){ return BN.format(n); }
@@ -76,6 +89,7 @@ window.App = window.App || {};
     els.statWeek.textContent = fmtSigned(d.guildThisWeek);
     els.statMembers.textContent = d.players.length;
     els.statWeeks.textContent = d.weeksTracked;
+    els.treasuryValue.textContent = fmt(d.treasury);
   }
 
   // Builds a non-linear (log10) y-axis: gridlines/labels at "nice" decade
@@ -114,22 +128,25 @@ window.App = window.App || {};
 
     let minLog = Math.min(...logs);
     let maxLog = Math.max(...logs);
-    if (maxLog - minLog < 1){ // degenerate/near-flat range — pad so it isn't a single line
-      const mid = (maxLog + minLog) / 2;
-      minLog = mid - 0.5; maxLog = mid + 0.5;
-    }
-    const axisFloor = Math.floor(minLog);
-    const axisCeil = Math.ceil(maxLog);
-    const axisMax = axisCeil + 0.12; // headroom so the tallest bar doesn't touch the top
+    // Always give the tallest bar a consistent ~92%-of-height position, no
+    // matter how the data is shaped (one week, many equal weeks, huge
+    // spread, etc) — rather than deriving headroom from rounded decades,
+    // which could leave the tallest bar looking short.
+    const TOP_FRACTION = 0.92;
+    const MIN_SPREAD_DECADES = 1; // keep at least one decade of context below the tallest bar
+    let axisFloor = Math.floor(minLog);
+    if (maxLog - axisFloor < MIN_SPREAD_DECADES) axisFloor = Math.floor(maxLog - MIN_SPREAD_DECADES);
+    const axisMax = axisFloor + (maxLog - axisFloor) / TOP_FRACTION;
     const range = axisMax - axisFloor;
     const pxFor = (log) => WK_LABEL_RESERVE + Math.max(0, Math.min(1, (log - axisFloor) / range)) * trackH;
 
     // Thin decade ticks out if the range spans a lot of orders of magnitude.
+    const axisCeil = Math.floor(axisMax);
     const decadeCount = axisCeil - axisFloor + 1;
     const step = decadeCount > 7 ? Math.ceil(decadeCount / 7) : 1;
     const ticks = [];
     for (let d = axisFloor; d < axisCeil; d += step) ticks.push(d);
-    ticks.push(axisCeil);
+    if (ticks[ticks.length - 1] !== axisCeil) ticks.push(axisCeil);
 
     els.chartAxis.innerHTML = ticks.map(d => {
       const label = fmt({ m: 1, e: d });
@@ -225,7 +242,7 @@ window.App = window.App || {};
       const cls = v => BN.isZero(v) ? 'zero' : BN.isNeg(v) ? 'neg' : 'pos';
       return `<div class="lb-row clickable" data-player="${escapeHtml(p.name)}" tabindex="0" role="button">
         <div class="rank">${i+1}</div>
-        <div class="pname">${escapeHtml(p.name)}<span class="since">updated ${p.lastUpdated}</span></div>
+        <div class="pname"><span class="pname-text">${escapeHtml(p.name)}</span><span class="since">updated ${p.lastUpdated}</span></div>
         <div class="num">${fmt(p.total)}</div>
         <div class="num delta ${cls(p.thisWeek)}">${fmtSigned(p.thisWeek)}</div>
         <div class="num delta ${cls(p.lastWeek)}">${fmtSigned(p.lastWeek)}</div>

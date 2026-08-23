@@ -30,6 +30,15 @@ window.App = window.App || {};
     return null;
   }
 
+  // Shared with js/googleSheets.js: turns history entries into the same
+  // plain-object row shape used for xlsx export, so both destinations
+  // (a downloaded file, or a synced Google Sheet) write identical data.
+  function historyToRows(history){
+    return history.slice()
+      .sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
+      .map(e => ({ Date: e.date, Player: e.player, Total: BN.toStorageValue(e.total) }));
+  }
+
   function normalizeRow(row){
     const dateKey = findKey(row, ['date', 'week', 'week of', 'logged']);
     const playerKey = findKey(row, ['player', 'name', 'username', 'member']);
@@ -63,18 +72,27 @@ window.App = window.App || {};
   // Reads the hidden "Meta" sheet (if present) to find which format version
   // wrote this file. Older exports (before this existed) have no Meta sheet
   // at all — that's treated as version 1, not an error.
-  function readFormatVersion(wb){
+  function readMetaValue(wb, key){
     const ws = wb.Sheets['Meta'];
-    if (!ws) return 1;
+    if (!ws) return null;
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     const row = rows.find(r => {
       const k = findKey(r, ['key']);
-      return k && String(r[k]).trim().toLowerCase() === 'format version';
+      return k && String(r[k]).trim().toLowerCase() === key;
     });
-    if (!row) return 1;
+    if (!row) return null;
     const valKey = findKey(row, ['value']);
-    const v = valKey ? parseInt(row[valKey], 10) : NaN;
+    return valKey ? row[valKey] : null;
+  }
+  function readFormatVersion(wb){
+    const v = parseInt(readMetaValue(wb, 'format version'), 10);
     return isNaN(v) ? 1 : v;
+  }
+  function readTreasury(wb){
+    const raw = readMetaValue(wb, 'treasury'); // absent in files exported before this existed — treated as 0
+    if (raw === null || raw === '') return BN.zero();
+    const parsed = BN.parse(raw);
+    return parsed || BN.zero();
   }
 
   function initImportExport(){
@@ -99,6 +117,7 @@ window.App = window.App || {};
           return;
         }
         State.history = parsed;
+        State.treasury = readTreasury(wb);
         renderAll();
         const versionNote = fileVersion > FORMAT_VERSION
           ? ' Note: this file was exported by a newer version of the app — some data may not have loaded correctly.'
@@ -113,13 +132,12 @@ window.App = window.App || {};
 
     els.exportBtn.addEventListener('click', () => {
       if (!State.history.length){ setStatus('Nothing to export yet.', 'err'); return; }
-      const rows = State.history.slice()
-        .sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
-        .map(e => ({ Date: e.date, Player: e.player, Total: BN.toStorageValue(e.total) }));
+      const rows = historyToRows(State.history);
       const ws = XLSX.utils.json_to_sheet(rows);
       const metaWs = XLSX.utils.json_to_sheet([
         { Key: 'Format version', Value: FORMAT_VERSION },
         { Key: 'Exported', Value: toISODate(new Date()) },
+        { Key: 'Treasury', Value: BN.toStorageValue(State.treasury) },
       ]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'History');
@@ -131,4 +149,18 @@ window.App = window.App || {};
   }
 
   window.App.initImportExport = initImportExport;
+
+  // Reused by js/googleSheets.js so file import/export and Google Sheets
+  // sync always agree on the row format and normalization rules.
+  window.App.SheetFormat = {
+    FORMAT_VERSION,
+    normalizeRow,
+    historyToRows,
+    findKey,
+    parseTreasuryValue(raw){
+      if (raw === null || raw === undefined || raw === '') return BN.zero();
+      const parsed = BN.parse(raw);
+      return parsed || BN.zero();
+    },
+  };
 })();

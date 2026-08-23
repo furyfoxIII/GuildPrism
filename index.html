@@ -21,6 +21,7 @@
       <button class="btn primary" id="importBtn">Import spreadsheet</button>
       <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
       <button class="btn" id="exportBtn">Export spreadsheet</button>
+      <button class="btn" id="sheetBtn">Google Sheet</button>
       <button class="btn ghost danger" id="clearBtn">Clear all</button>
       <span class="toolbar-status" id="toolbarStatus">No data loaded yet</span>
     </div>
@@ -33,7 +34,7 @@
 
   <div class="tab-panel" id="tabOverview">
     <div class="stat-row">
-      <div class="stat c1"><div class="label">Guild total prism</div><div class="value" id="statTotal">0</div></div>
+      <div class="stat c1" title="Includes prism donated by members who have since been removed"><div class="label">Guild total prism</div><div class="value" id="statTotal">0</div></div>
       <div class="stat c2"><div class="label">Donated this week</div><div class="value" id="statWeek">0</div></div>
       <div class="stat c3"><div class="label">Members tracked</div><div class="value" id="statMembers">0</div></div>
       <div class="stat c4"><div class="label">Weeks tracked</div><div class="value" id="statWeeks">0</div></div>
@@ -96,6 +97,17 @@
             <button type="submit" class="btn ghost danger">Remove</button>
           </form>
         </div>
+        <div class="treasury-box" id="treasuryBox">
+          <div>
+            <div class="label">Treasury (from removed members)</div>
+            <div class="value" id="treasuryValue">0</div>
+          </div>
+          <form class="treasury-actions" id="treasuryAdjustForm">
+            <input type="text" id="treasuryAdjustInput" inputmode="decimal" autocomplete="off" placeholder="Add amount (e.g. to fix a past mismatch)">
+            <button type="submit" class="btn ghost">Add</button>
+            <button type="button" class="btn ghost danger" id="resetTreasuryBtn">Reset to 0</button>
+          </form>
+        </div>
       </div>
 
       <div class="card history-card">
@@ -131,12 +143,42 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="sheetModalBackdrop" hidden>
+  <div class="modal" id="sheetModal">
+    <button type="button" class="modal-close" id="sheetModalClose" aria-label="Close">&times;</button>
+    <h2 class="card-title">Google Sheet sync</h2>
+    <form id="sheetSettingsForm">
+      <div>
+        <label for="sheetUrlInput">Apps Script Web App URL</label>
+        <input type="url" id="sheetUrlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+      </div>
+      <div>
+        <label for="sheetSecretInput">Shared secret (optional, recommended)</label>
+        <input type="text" id="sheetSecretInput" placeholder="Must match the secret in your Apps Script" autocomplete="off">
+      </div>
+      <p class="field-hint">
+        These are saved in this browser only. See the README for the one-time
+        Apps Script snippet to paste into your sheet — no Google sign-in
+        needed, the script does the writing on the sheet owner's behalf.
+      </p>
+      <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
+        <button type="button" class="btn ghost" id="sheetPullBtn">Pull from sheet</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn ghost" id="sheetPushBtn">Push to sheet</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Load order matters: each module attaches to the shared window.App namespace. -->
 <script src="js/bignumber.js"></script>
 <script src="js/dates.js"></script>
 <script src="js/state.js"></script>
 <script src="js/render.js"></script>
 <script src="js/importExport.js"></script>
+<script src="js/googleSheets.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
