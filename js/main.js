@@ -27,6 +27,16 @@
     });
   });
 
+  // ---------- pie range toggle (all time vs. weekly) ----------
+  els.pieRangeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      State.pieRange = tab.dataset.range;
+      els.pieRangeTabs.forEach(t => t.classList.toggle('active', t === tab));
+      const d = window.App.computeDerived();
+      window.App.renderPieChart(d.players, d.treasury);
+    });
+  });
+
   // ---------- top-level tabs (overview / manage) ----------
   function showTab(name){
     const isOverview = name === 'overview';

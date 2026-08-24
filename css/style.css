@@ -167,11 +167,21 @@ h1{
 }
 .view-tab.active{ border-color: var(--violet); color: var(--violet); }
 
-/* ---------- Pie view: "this week by member" ---------- */
+/* ---------- Pie view: contributions by member (all time / weekly) ---------- */
 .pie-view{
-  flex:1; min-height:0; display:flex; align-items:center; gap:22px;
+  flex:1; min-height:0; display:flex; flex-direction:column; gap:10px;
 }
 .pie-view[hidden]{ display:none; }
+.pie-range-tabs{ display:flex; gap:6px; flex-shrink:0; }
+.pie-range-tab{
+  font-family:'IBM Plex Mono', monospace; font-size:11px;
+  padding: 5px 10px; border-radius:7px; border:1px solid var(--line);
+  background:none; color:var(--text-faint); cursor:pointer; white-space:nowrap;
+}
+.pie-range-tab.active{ border-color: var(--cyan); color: var(--cyan); }
+.pie-body{
+  flex:1; min-height:0; display:flex; align-items:center; gap:22px;
+}
 .pie-svg{ flex:0 0 auto; width:170px; height:170px; }
 .pie-svg path, .pie-svg circle{ transition: filter .12s ease, transform .12s ease; transform-origin:100px 100px; cursor:default; }
 .pie-svg path:hover, .pie-svg circle:hover{ filter:brightness(1.18); }
@@ -345,7 +355,7 @@ code{
   .overview-grid, .manage-grid{ grid-template-columns: 1fr; }
   .overview-grid .card, .manage-grid .card{ overflow:visible; }
   .chart-body{ height:180px; flex:none; }
-  .pie-view{ flex-direction:column; align-items:stretch; }
+  .pie-body{ flex-direction:column; align-items:stretch; }
   .pie-legend{ overflow:visible; }
   .lb-scroll, .history-scroll{ max-height:none; overflow:visible; }
 }

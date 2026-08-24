@@ -20,6 +20,8 @@ window.App = window.App || {};
     chartAxis: document.getElementById('chartAxis'),
     chartBodyView: document.getElementById('chartBodyView'),
     pieView: document.getElementById('pieView'),
+    pieBody: document.getElementById('pieBody'),
+    pieRangeTabs: document.querySelectorAll('.pie-range-tab'),
     viewTabs: document.querySelectorAll('.view-tab'),
     leaderboardWrap: document.getElementById('leaderboardWrap'),
     lbHint: document.getElementById('lbHint'),
@@ -78,7 +80,7 @@ window.App = window.App || {};
     const d = window.App.computeDerived();
     renderStats(d);
     renderChart(d.series);
-    renderPieChart(d.players);
+    renderPieChart(d.players, d.treasury);
     renderLeaderboard(d.players);
     renderRemovePlayerSelect(d.players);
     renderHistory(d.entriesWithDelta);
@@ -183,14 +185,25 @@ window.App = window.App || {};
     return `M ${cx} ${cy} L ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)} Z`;
   }
 
-  function renderPieChart(players){
+  function renderPieChart(players, treasury){
+    const isAllTime = State.pieRange === 'all';
+
     const contributions = players
-      .map(p => ({ name: p.name, amt: p.thisWeek }))
+      .map(p => ({ name: p.name, amt: isAllTime ? p.total : p.thisWeek }))
       .filter(p => BN.cmp(p.amt, BN.zero()) > 0)
       .sort((a, b) => BN.cmp(b.amt, a.amt));
 
+    // All-time view also folds in the treasury (prism from removed members
+    // plus manual adjustments) as an "Others" slice, so the pie still
+    // accounts for the full guild total.
+    if (isAllTime && treasury && BN.cmp(treasury, BN.zero()) > 0){
+      contributions.push({ name: 'Others', amt: treasury });
+    }
+
     if (!contributions.length){
-      els.pieView.innerHTML = '<div class="chart-empty">No donations logged this week yet.</div>';
+      els.pieBody.innerHTML = isAllTime
+        ? '<div class="chart-empty">No donations logged yet.</div>'
+        : '<div class="chart-empty">No donations logged this week yet.</div>';
       return;
     }
 
@@ -221,8 +234,9 @@ window.App = window.App || {};
         </div>`);
     });
 
-    els.pieView.innerHTML = `
-      <svg viewBox="0 0 200 200" class="pie-svg" role="img" aria-label="This week's contributions by member">${slices}</svg>
+    const ariaLabel = isAllTime ? "All-time contributions by member" : "This week's contributions by member";
+    els.pieBody.innerHTML = `
+      <svg viewBox="0 0 200 200" class="pie-svg" role="img" aria-label="${ariaLabel}">${slices}</svg>
       <div class="pie-legend">${legend.join('')}</div>
     `;
   }
@@ -296,4 +310,5 @@ window.App = window.App || {};
   window.App.escapeHtml = escapeHtml;
   window.App.setStatus = setStatus;
   window.App.renderAll = renderAll;
+  window.App.renderPieChart = renderPieChart;
 })();

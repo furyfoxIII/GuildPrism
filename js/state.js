@@ -9,6 +9,7 @@ window.App = window.App || {};
   const State = {
     history: [],
     sortMode: 'total',
+    pieRange: 'weekly', // 'weekly' | 'all'
     treasury: BN.zero(), // prism donated by members who have since been removed
   };
 
