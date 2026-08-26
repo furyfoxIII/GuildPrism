@@ -51,7 +51,10 @@ window.App = window.App || {};
   async function pushToSheet(){
     const { url, secret } = currentSettings();
     if (!url){ setStatus('Enter your Apps Script Web App URL first.', 'err'); return; }
-    if (!State.history.length && BN.isZero(State.treasury)){ setStatus('Nothing to push yet.', 'err'); return; }
+    if (!State.history.length && BN.isZero(State.treasury)){
+      const ok = confirm("You don't have any local data (no history and an empty treasury). Pushing now will overwrite the connected Google Sheet with empty data. Continue anyway?");
+      if (!ok){ setStatus('Push cancelled — nothing was sent.', 'err'); return; }
+    }
 
     const body = JSON.stringify({
       secret,
