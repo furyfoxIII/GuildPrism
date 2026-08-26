@@ -217,16 +217,17 @@ window.App = window.App || {};
       const frac = BN.ratio(c.amt, total);
       const color = PIE_PALETTE[i % PIE_PALETTE.length];
       const pct = (frac * 100).toFixed(frac < 0.01 ? 2 : 1);
-      const tooltip = `${escapeHtml(c.name)}: ${fmt(c.amt)} (${pct}%)`;
+      const nameAttr = escapeHtml(c.name);
+      const amtAttr = escapeHtml(fmt(c.amt));
       if (contributions.length === 1 || frac > 0.9995){
-        slices += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"><title>${tooltip}</title></circle>`;
+        slices += `<circle class="pie-slice" data-idx="${i}" data-name="${nameAttr}" data-amt="${amtAttr}" data-pct="${pct}" cx="${cx}" cy="${cy}" r="${r}" fill="${color}"></circle>`;
       } else {
         const startDeg = cum * 360;
         cum += frac;
         const endDeg = Math.min(cum, 1) * 360;
-        slices += `<path d="${pieSlicePath(cx, cy, r, startDeg, endDeg)}" fill="${color}"><title>${tooltip}</title></path>`;
+        slices += `<path class="pie-slice" data-idx="${i}" data-name="${nameAttr}" data-amt="${amtAttr}" data-pct="${pct}" d="${pieSlicePath(cx, cy, r, startDeg, endDeg)}" fill="${color}"></path>`;
       }
-      legend.push(`<div class="pie-legend-row">
+      legend.push(`<div class="pie-legend-row" data-idx="${i}">
           <span class="swatch" style="background:${color}"></span>
           <span class="pl-name">${escapeHtml(c.name)}</span>
           <span class="pl-amt">${fmt(c.amt)}</span>
@@ -236,9 +237,62 @@ window.App = window.App || {};
 
     const ariaLabel = isAllTime ? "All-time contributions by member" : "This week's contributions by member";
     els.pieBody.innerHTML = `
-      <svg viewBox="0 0 200 200" class="pie-svg" role="img" aria-label="${ariaLabel}">${slices}</svg>
+      <div class="pie-chart-wrap">
+        <svg viewBox="0 0 200 200" class="pie-svg" role="img" aria-label="${ariaLabel}">${slices}</svg>
+      </div>
       <div class="pie-legend">${legend.join('')}</div>
+      <div class="pie-tooltip" id="pieTooltip" hidden></div>
     `;
+
+    wirePieHover();
+  }
+
+  function wirePieHover(){
+    const container = els.pieBody;
+    const tooltip = container.querySelector('#pieTooltip');
+    const slices = container.querySelectorAll('.pie-slice');
+    const rows = container.querySelectorAll('.pie-legend-row');
+    if (!container || !tooltip) return;
+
+    function dataFor(idx){
+      return container.querySelector(`.pie-slice[data-idx="${idx}"]`);
+    }
+    function showTooltip(idx){
+      const source = dataFor(idx);
+      if (!source) return;
+      tooltip.innerHTML = `<span class="pt-name">${source.dataset.name}</span><span class="pt-amt">${source.dataset.amt} prism</span><span class="pt-pct">${source.dataset.pct}%</span>`;
+      tooltip.hidden = false;
+      setActive(idx);
+    }
+    function positionTooltip(evt){
+      const rect = container.getBoundingClientRect();
+      let x = evt.clientX - rect.left + 16;
+      let y = evt.clientY - rect.top + 16;
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      if (x + tw > rect.width) x = evt.clientX - rect.left - tw - 16;
+      if (y + th > rect.height) y = evt.clientY - rect.top - th - 16;
+      tooltip.style.left = `${Math.max(0, x)}px`;
+      tooltip.style.top = `${Math.max(0, y)}px`;
+    }
+    function hideTooltip(){
+      tooltip.hidden = true;
+      setActive(null);
+    }
+    function setActive(idx){
+      slices.forEach(s => s.classList.toggle('is-active', s.dataset.idx === idx));
+      rows.forEach(r => r.classList.toggle('is-active', r.dataset.idx === idx));
+    }
+
+    slices.forEach(slice => {
+      slice.addEventListener('mouseenter', () => showTooltip(slice.dataset.idx));
+      slice.addEventListener('mousemove', positionTooltip);
+      slice.addEventListener('mouseleave', hideTooltip);
+    });
+    rows.forEach(row => {
+      row.addEventListener('mouseenter', () => showTooltip(row.dataset.idx));
+      row.addEventListener('mousemove', positionTooltip);
+      row.addEventListener('mouseleave', hideTooltip);
+    });
   }
 
   function renderLeaderboard(players){
